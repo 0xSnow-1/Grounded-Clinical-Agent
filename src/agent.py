@@ -25,7 +25,7 @@ BEDROCK_REGION = os.getenv("BEDROCK_REGION", "us-east-1")
 DB_URI = os.environ["DB_URI"]
 
 haiku = ChatBedrockConverse(model=BEDROCK_MODEL_ID, region_name=BEDROCK_REGION, temperature=0)
-haiku_converstaional = ChatBedrockConverse(model=BEDROCK_MODEL_ID, region_name=BEDROCK_REGION, temperature=0.7)
+haiku_conversational = ChatBedrockConverse(model=BEDROCK_MODEL_ID, region_name=BEDROCK_REGION, temperature=0.7)
 
 pool = ConnectionPool(conninfo=DB_URI, max_size=20, check=ConnectionPool.check_connection, kwargs={"autocommit": True, "row_factory": dict_row})
 checkpointer = PostgresSaver(pool)
@@ -72,7 +72,7 @@ def medical_agent_node(state: MedicalAgentState):
         
 
 def CONVERSATION_AGENT(state: MedicalAgentState):
-    response = haiku_converstaional.invoke([
+    response = haiku_conversational.invoke([
         SystemMessage(content="You are an amazing helpful agent, your job is to assist the user in any way"),
         HumanMessage(content=f"user query is: {state['user_query']}")
     ])
