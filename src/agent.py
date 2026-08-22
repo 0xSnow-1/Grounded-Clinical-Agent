@@ -33,7 +33,7 @@ checkpointer.setup()
 
 
 
-# LLM Augumentations
+# LLM Augmentations
 router = haiku.with_structured_output(Router)
 Feedback = haiku.with_structured_output(EvaluatorOptimizer)
 
