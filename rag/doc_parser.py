@@ -80,4 +80,25 @@ if __name__ == "__main__":
     )
     print(f"SUCCESSFULLY PARSED ALL PDFS IN: {pdf_results_dir}")
     print(f"TOTAL NUMBER OF PDFS: {len(pdf_results_dir)}")
+
+
+
+
+    txt_results_dir = convert_TXT_raw(
+        TXT_dir= Path("data/TXT"),
+        output_dir=Path("data/raw")
+    )
+    print(f"SUCCESSFULLY PARSED ALL TXT FILES IN: {txt_results_dir}")
+    print(f"TOTAL NUMBER OF TXT FILES: {len(txt_results_dir)}")
+
+
+
+
+
+    docx_results_dir = convert_docx_raw(
+        docx_dir= Path("data/DOCX"),
+        output_dir=Path("data/raw")
+    )
+    print(f"SUCCESSFULLY PARSED ALL DOCX FILES IN: {docx_results_dir}")
+    print(f"TOTAL NUMBER OF DOCX FILES: {len(docx_results_dir)}")
     
