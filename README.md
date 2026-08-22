@@ -49,7 +49,7 @@ flowchart TD
     Router -->|Clinical Inquiry| Retrieval[Qdrant Retrieval: MedEmbed-small-v0.1]
     
     Retrieval --> MedicalAgent[Medical Agent Node: Claude Haiku 4.5]
-    MedicalAgent --> Checker{Groundness Checker: Sonnet 4.6}
+    MedicalAgent --> Checker{Groundedness Checker: Sonnet 4.6}
     
     Checker -->|Claim Verified| Success([Verified Output + Citations])
     Checker -->|Untraceable Claim & Retry < 3| MedicalAgent
@@ -67,7 +67,7 @@ flowchart TD
 1. **Deterministic Intent Routing:** Filters out-of-domain and non-clinical conversations from the RAG graph.
 2. **Biomedical Vector Retrieval:** Extracts relevant guideline passages using domain-specific `abhinand/MedEmbed-small-v0.1` embeddings.
 3. **Structured Claim Generation:** Emits structured `MedicalAnswer` models with itemized claims and confidence ratings.
-4. **Independent Groundness Auditing:** Reviews claims against source evidence and injects corrective critique on failure.
+4. **Independent Groundedness Auditing:** Reviews claims against source evidence and injects corrective critique on failure.
 5. **PostgreSQL Checkpointing:** Persists thread execution state and conversation histories across distributed sessions.
 
 ---
@@ -90,7 +90,7 @@ The web interface is built with React 19, TypeScript, and a vanilla CSS design s
 
 The per-1M-token pricing below is directly sourced from AWS Bedrock's published pricing for Claude Haiku 4.5 vs Claude Sonnet 4.6. Cost-per-query estimates are derived from these rates and are **theoretical upper bounds** — actual spend depends on prompt length and retry count. End-to-end latency and per-query token consumption are not yet instrumented in this codebase; those metrics are tracked on the Phase 5 roadmap.
 
-| Metric | Claude Sonnet 4.6 / GPT-4o (Single-Shot) | Haiku 4.5 + Groundness Loop | Basis |
+| Metric | Claude Sonnet 4.6 / GPT-4o (Single-Shot) | Haiku 4.5 + Groundedness Loop | Basis |
 |---|---|---|---|
 | **Input Pricing (per 1M tokens)** | $3.00 | $0.25 | AWS Bedrock published rates |
 | **Output Pricing (per 1M tokens)** | $15.00 | $1.25 | AWS Bedrock published rates |
@@ -272,7 +272,7 @@ The next development phase focuses on evolving this architecture into an enterpr
    - Integrate BM25 sparse keyword indices alongside `MedEmbed-small-v0.1` dense embeddings in Qdrant.
    - Implement Reciprocal Rank Fusion (RRF) to merge candidate pools and add FlashRank cross-encoder reranking to optimize context precision on exact drug dosages and acronyms.
 2. **Multi-Agent Specialist Taskforce (Phase 4 Upgrade):**
-   - Deconstruct the monolithic medical node into specialized sub-agents: **Triage & Intake**, **Guideline Researcher**, **Drug & Allergy Specialist**, **Groundness Auditor**, and **Patient Communication Node**.
+   - Deconstruct the monolithic medical node into specialized sub-agents: **Triage & Intake**, **Guideline Researcher**, **Drug & Allergy Specialist**, **Groundedness Auditor**, and **Patient Communication Node**.
 3. **Multi-Format Ingestion Engine Expansion:**
    - Extend the Docling parsing engine to support automated ingestion of clinical PDFs, DOCX guidelines, and structured clinical database feeds.
 4. **CI/CD Quality Gates:**
