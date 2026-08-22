@@ -136,9 +136,9 @@ def evaluator_fallback_node(state: MedicalAgentState):
 
 def Response_route(state: MedicalAgentState):
     if state["generated_output_valid_or_not"] == "claim_is_tracable":
-        return "SUCESS"
+        return "SUCCESS"
     elif state["remaining_steps"] <= 2:
-        return "RECRUSION_LIMIT_REACHED"
+        return "RECURSION_LIMIT_REACHED"
     elif state.get("retry_count") >= 3:
         return "MAX_LOOP_REACHED"
     else:
@@ -172,8 +172,8 @@ graph.add_conditional_edges("query_validator", Route,
 graph.add_edge("medical_agent", "checker")
 graph.add_conditional_edges("checker", Response_route,
     {
-        "SUCESS": END,
-        "RECRUSION_LIMIT_REACHED": "fallback_node",
+        "SUCCESS": END,
+        "RECURSION_LIMIT_REACHED": "fallback_node",
         "MAX_LOOP_REACHED": "eval_fallback_node",
         "REDO_NEEDED": "medical_agent"
     }
