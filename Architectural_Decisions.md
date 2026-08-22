@@ -112,7 +112,7 @@ medical text) and rename the Qdrant collection from the stale
 
 ## ADR-015: Deterministic Pipeline (Temperature 0)
 
-> **Before implementing this, you should understand this file: `src/agent.py`
+> **Before implementing this, you should understand this file: `src/agent.py`**
 
 **Status:** ✅ Applied (2026-08-08)
 
