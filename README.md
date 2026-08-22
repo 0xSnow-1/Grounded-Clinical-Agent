@@ -16,7 +16,6 @@
   <a href="#ui-showcase">UI Showcase</a> •
   <a href="#system-economics">Economics & Latency</a> •
   <a href="#evaluation--benchmarks">Evaluation & Benchmarks</a> •
-  <a href="#trade-offs">Trade-Offs</a> •
   <a href="#quickstart">Quickstart</a> •
   <a href="#roadmap">Roadmap</a>
 </p>
