@@ -26,14 +26,16 @@
 
 > **Domain Scope:** Grounded clinical guidance strictly indexed across institutional oral healthcare guidelines: **CDC Oral Health Surveillance**, **WHO Global Oral Health 2030 Strategies**, **USPSTF Pediatric Caries Guidelines**, and **ADA/AAPD Pit & Fissure Sealant Protocols**.
 
+> **Status:** The benchmark numbers below (baseline $B_0$, run `r009`) were measured on the pre-hybrid, dense-only pipeline at commit `083e93f`. A hybrid-vectorstore rewrite has landed since (commit `406b5a0`): it adds a dual dense + sparse storage layer in `rag/vectorstore.py`, but the retrieval path (`rag/retrieval.py` is currently a stub) and the ingest/agent entry points that depend on it are not yet reconnected, so that work is a work-in-progress on `main` and the B0 numbers remain the only measured baseline.
+
 ---
 
 ## Key Capabilities
 
-* **Zero-Hallucination Claim Verification:** Every factual sentence requires explicit citation linking to retrieved clinical passages.
+* **Citation-Verified Claim Generation:** Every factual sentence requires explicit citation linking to retrieved clinical passages; the measured hallucination rate is **5.0%** (faithfulness 95.0%) on the 40-question B0 benchmark (`evals/benchmarks.json` `r009`).
 * **Automated Self-Correction Loop:** Untraceable claims trigger feedback loops back to the generator (up to 3 retries) before escalating to human review.
 * **Dual-LLM Judge Decoupling:** Generation uses **Claude Haiku 4.5** for fast, low-cost drafting; validation uses **Claude Sonnet 4.6** to prevent self-preference bias.
-* **Clinical Boundary Safety Containment:** 100% defense resilience against role drift, unauthorized pediatric prescriptions, and format suppression attacks.
+* **Clinical Boundary Safety Containment:** an 8-category robustness suite (role drift, unauthorized pediatric prescriptions, format suppression, and more); measured **80.0%** adversarial defense at baseline B0, with 100% as a Phase-3 target, not a measured value.
 * **Production Full-Stack Architecture:** REST API and CopilotKit AG-UI mounting on FastAPI, state checkpointers on PostgreSQL, and a custom React + TypeScript client.
 
 ---
@@ -79,7 +81,7 @@ The web interface is built with React 19, TypeScript, and a vanilla CSS design s
 
 | Verified Clinical Response with Citations | Interactive Claim Evidence Expansion |
 | :---: | :---: |
-| <img src="ui-medical-answer.png" width="450" alt="Verified Response"> | <img src="ui-medical-citation-expanded.png" width="450" alt="Expanded Evidence Dropdown"> |
+| <img src="docs/images/ui-medical-answer.png" width="450" alt="Verified Response"> | <img src="docs/images/ui-medical-citation-expanded.png" width="450" alt="Expanded Evidence Dropdown"> |
 
 </div>
 
@@ -87,14 +89,13 @@ The web interface is built with React 19, TypeScript, and a vanilla CSS design s
 
 ## System Economics
 
-The per-1M-token pricing below is directly sourced from AWS Bedrock's published pricing for Claude Haiku 4.5 vs Claude Sonnet 4.6. Cost-per-query estimates are derived from these rates and are **theoretical upper bounds** — actual spend depends on prompt length and retry count. End-to-end latency and per-query token consumption are not yet instrumented in this codebase; those metrics are tracked on the Phase 5 roadmap.
+Haiku generation pricing below is Anthropic's published API list price per 1M tokens (accessed 2026-10-02); AWS Bedrock rates can differ by region, so the figures are indicative. **No Sonnet figure is stated:** Claude Sonnet 4.6 is not listed on Anthropic's public pricing page, and Bedrock's current public list stops at Sonnet 4.5, so a verifiable number exists for neither. The previous "% cheaper" comparison was removed because this design runs the Sonnet 4.6 judge on **every** query, so a single-shot Haiku-vs-Sonnet price differential would be misleading. Per-query token consumption is not yet instrumented; latency and cost instrumentation are Phase-5 roadmap items.
 
-| Metric | Claude Sonnet 4.6 / GPT-4o (Single-Shot) | Haiku 4.5 + Groundedness Loop | Basis |
-|---|---|---|---|
-| **Input Pricing (per 1M tokens)** | $3.00 | $0.25 | AWS Bedrock published rates |
-| **Output Pricing (per 1M tokens)** | $15.00 | $1.25 | AWS Bedrock published rates |
-| **Theoretical Input Cost Reduction** | — | **91.7% cheaper** | Pricing differential only |
-| **Hallucination Rate** | Not measured | **5.0%** on 40-question benchmark | File-backed: `evals/benchmarks.json` `r009` |
+| Metric | Haiku 4.5 generator (per 1M tokens) | Basis |
+|---|---|---|
+| **Input Pricing** | $1.00 | Anthropic published API list price (2026-10-02) |
+| **Output Pricing** | $5.00 | Anthropic published API list price (2026-10-02) |
+| **Hallucination Rate** | **5.0%** on 40-question benchmark | File-backed: `evals/benchmarks.json` `r009` |
 
 ---
 
@@ -102,7 +103,7 @@ The per-1M-token pricing below is directly sourced from AWS Bedrock's published 
 
 | Subsystem | Chosen Technology | Alternatives Considered | Trade-Off & Decision Rationale |
 |---|---|---|---|
-| **Embeddings** | `abhinand/MedEmbed-small-v0.1` | OpenAI `text-embedding-3-small`, `all-MiniLM-L6-v2` | General embeddings underperform on specialized dental ontology (*edentulism*, *caries*, *amoxicillin prophylaxis*). `MedEmbed` captures clinical nomenclature with zero external API latency. |
+| **Embeddings** | `abhinand/MedEmbed-small-v0.1` (dense) + `Qdrant/bm25` sparse storage (hybrid WIP) | OpenAI `text-embedding-3-small`, `all-MiniLM-L6-v2` | General embeddings underperform on specialized dental ontology (*edentulism*, *caries*, *amoxicillin prophylaxis*). `MedEmbed` captures clinical nomenclature with zero external API latency. Hybrid storage (dense + sparse named vectors, commit `406b5a0`) is merged; the RRF fusion retrieval path is not yet implemented in `rag/retrieval.py` (see Status note). |
 | **Orchestration** | LangGraph (Cyclic DAG) | LangChain Linear Chains, LlamaIndex | Linear pipelines cannot loop back to regenerate when claims fail validation. LangGraph enables cyclic state flow between generator and groundness checker. |
 | **State Persistence** | PostgreSQL (`PostgresSaver`) | In-memory `MemorySaver`, Redis | In-memory storage drops state on container restart. PostgreSQL ensures persistent audit trails across distributed workers. |
 | **Document Parsing** | Docling Chunker | Naive Character Splitter, Recursive Token Splitter | Standard splitters sever clinical tables and dosage matrices across boundaries. Docling preserves markdown table hierarchies and guideline headers. |
@@ -135,7 +136,7 @@ python evals/run_robustness_eval.py
 
 ### Current Empirical Benchmark: Baseline B0 (40 Clinical Cases)
 
-The initial baseline evaluation ($B_0$) measures the system using **Naive Dense Vector Search (`MedEmbed-small-v0.1`, $k=5$)** prior to the Phase 3 Hybrid Search and Reranker upgrades:
+The initial baseline evaluation ($B_0$) measures the system using **Naive Dense Vector Search (`MedEmbed-small-v0.1`, $k=5$)** at commit `083e93f`, prior to the hybrid-search work that landed later (see Status note — those hybrid changes are not yet wired end-to-end, so there is no $B_1$ yet):
 
 | Metric | Score (Baseline $B_0$) | Phase 3 Target ($B_1$ Hybrid) | Engineering Rationale |
 |---|---|---|---|
@@ -172,7 +173,7 @@ r009   2026-08-16  083e93f  40   0.925   0.950     0.854      80.0%    Baseline 
 
 ```bash
 # Clone repository
-git clone https://github.com/HarveyAGH/Grounded-Clinical-Agent.git
+git clone https://github.com/0xSnow-1/Grounded-Clinical-Agent.git
 cd Grounded-Clinical-Agent
 
 # Virtual environment setup
@@ -225,9 +226,11 @@ curl -I http://localhost:8000/docs
 ## Repository Structure
 
 ```
+├── agent/                           # CopilotKit contribution skills registry (3rd-party, unrelated to the core agent)
 ├── app/
 │   └── main.py                     # FastAPI REST API + CopilotKit AG-UI protocol + static mount
 ├── data/                           # Clinical guideline storage (PDFs, parsed markdown, Qdrant vectors)
+├── docs/                            # Walkthrough + UI screenshots
 ├── evals/
 │   ├── benchmark_40.json           # 40-question comprehensive clinical benchmark dataset
 │   ├── eval_metrics.py             # Deterministic IR metrics (HitRate@3, MRR) + Unified Sonnet judge
@@ -242,18 +245,20 @@ curl -I http://localhost:8000/docs
 │   │   └── index.css               # Vanilla CSS design tokens & animations
 │   ├── package.json
 │   └── vite.config.ts
-├── rag/                            # RAG pipeline
+├── rag/                            # RAG pipeline (hybrid WIP — see Status note)
 │   ├── content_processor.py        # Section & table chunker
 │   ├── doc_parser.py               # Multi-format doc converter
-│   ├── ingest.py                   # Corpus indexing entrypoint
-│   ├── retrieval.py                # Qdrant retrieval interface
-│   └── vectorstore.py              # MedEmbed embedding & Qdrant vector store
+│   ├── ingest.py                   # Corpus indexing entrypoint (wires to hybrid vectorstore)
+│   ├── retrieval.py                # Stub: retrieval functions not yet reimplemented
+│   ├── vectorstore.py              # Hybrid storage (dense MedEmbed + sparse Qdrant/bm25) — WIP
+│   └── vectorstore_wip.py          # Pre-hybrid dense-only reference (the B0 baseline path)
 ├── src/                            # LangGraph agent orchestration
 │   ├── prompts/                    # Decoupled system prompts
 │   ├── agent.py                    # StateGraph with cyclic verification & Postgres checkpointer
 │   ├── states.py                   # Pydantic state models (MedicalAnswer, CitedClaim)
-│   └── tools.py                    # Qdrant evidence retrieval tool
-├── tests/                          # Pytest test suite
+│   └── tools.py                    # Qdrant evidence retrieval tool (imports the stub retrieval)
+├── tests/                          # Pytest test suite (vectorstore, hybrid-vectorstore, faithfulness)
+├── Architectural_Decisions.md      # ADR log
 ├── Dockerfile                      # Production container spec
 ├── docker-compose.yml              # Local/cloud orchestration
 └── pyproject.toml                  # Python package metadata
@@ -267,9 +272,9 @@ curl -I http://localhost:8000/docs
 
 The next development phase focuses on evolving this architecture into an enterprise-scale clinical intelligence platform:
 
-1. **Hybrid Retrieval & Cross-Encoder Reranking (Phase 3 Upgrade):**
-   - Integrate BM25 sparse keyword indices alongside `MedEmbed-small-v0.1` dense embeddings in Qdrant.
-   - Implement Reciprocal Rank Fusion (RRF) to merge candidate pools and add FlashRank cross-encoder reranking to optimize context precision on exact drug dosages and acronyms.
+1. **Finish Hybrid Retrieval & Cross-Encoder Reranking (Phase 3, in progress):**
+   - Hybrid storage layer (dense `MedEmbed-small-v0.1` + sparse `Qdrant/bm25` named vectors in Qdrant) is merged (commit `406b5a0`), but the retrieval path is a stub: `rag/retrieval.py` still needs `retrieve_chunks_with_scores` and `hybrid_retrieve_chunks`, and the index/build functions behind `rag/ingest.py` / `rag/vectorstore.py` must be reconnected before the agent tool (`src/tools.py`), the hybrid tests, and the ingest entrypoint work again.
+   - Then implement Reciprocal Rank Fusion (RRF) to merge candidate pools and add FlashRank cross-encoder reranking to optimize context precision on exact drug dosages and acronyms.
 2. **Multi-Agent Specialist Taskforce (Phase 4 Upgrade):**
    - Deconstruct the monolithic medical node into specialized sub-agents: **Triage & Intake**, **Guideline Researcher**, **Drug & Allergy Specialist**, **Groundedness Auditor**, and **Patient Communication Node**.
 3. **Multi-Format Ingestion Engine Expansion:**
