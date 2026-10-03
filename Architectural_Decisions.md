@@ -104,7 +104,7 @@ medical text) and rename the Qdrant collection from the stale
   "evidence does not cover X" instead of straining to use weak chunks.
 - ⚠️ One-source dominance observed (WHO global report filled 9/10 of one
   top-10) — watch for document imbalance; a reranker or threshold may be
-  needed (see `BIG_LEVERS_WALKTHROUGH.md`).
+  needed (see `docs/BIG_LEVERS_WALKTHROUGH.md`).
 - ⚠️ Re-ingestion dropped sources that lived only in the old store — the
   corpus is exactly `data/PDFS/`; nothing else (DOCX/TXT are placeholders).
 

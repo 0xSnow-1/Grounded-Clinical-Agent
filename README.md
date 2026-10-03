@@ -205,6 +205,14 @@ uvicorn app.main:app --reload --port 8000
 ```
 Open **http://localhost:8000** in your browser.
 
+### 4. Run the offline test suite
+
+```bash
+pytest -q --continue-on-collection-errors
+```
+
+**Current honest state:** the suite defines 7 test functions across 3 modules, but only `tests/test_faithfulness.py` collects and passes (1 passed). `tests/test_vectorstore.py` and `tests/test_hybrid_vectorstore.py` fail at import because the hybrid rewrite (commit `406b5a0`) removed `build_vectorstore`/`load_vectorstore` from `rag/vectorstore.py` and left `rag/retrieval.py` as a stub, so `from rag.vectorstore import build_vectorstore` and `from rag.retrieval import hybrid_retrieve_chunks` no longer resolve. This is the same disconnect the Status note describes; the two vectorstore modules will import again when the hybrid retrieval path is reconnected (Roadmap Phase 3). The two vectorstore modules also need a local Qdrant reachable at `localhost:6333` (`docker run -p 6333:6333 qdrant/qdrant`) because `rag/vectorstore.py` creates its collection at import time.
+
 <details>
 <summary><b>Docker Deployment Instructions</b></summary>
 
