@@ -289,3 +289,9 @@ The next development phase focuses on evolving this architecture into an enterpr
    - Extend the Docling parsing engine to support automated ingestion of clinical PDFs, DOCX guidelines, and structured clinical database feeds.
 4. **CI/CD Quality Gates:**
    - Deploy automated GitHub Actions workflows running unit tests, retrieval evaluation regression checks, and frontend TypeScript build validation on every pull request.
+
+---
+
+## Contact
+
+**Ahmed Gamal** · GitHub: [0xSnow-1](https://github.com/0xSnow-1) · X: [_0xSnowEth](https://x.com/_0xSnowEth) · LinkedIn: [in/ahmed-gamal-363b47307](https://www.linkedin.com/in/ahmed-gamal-363b47307) · Website: [0xsnow-1.github.io](https://0xsnow-1.github.io) · Email: [0xahmed.gamal@gmail.com](mailto:0xahmed.gamal@gmail.com)
